@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>台灣空氣品質 AQI 2021–2026</title>
+<style>
+:root{
+  --paper:#EDF0EE; --panel:#FAFBFA; --ink:#17232B; --muted:#5A6A72; --line:#C9D3D0;
+  --accent:#1F4E79; --accent-soft:#DCE7F0;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* 標題 */
+header.top{padding:36px 0 18px}
+h1{margin:0;font-size:clamp(34px,6.4vw,64px);line-height:1.05;font-weight:900;letter-spacing:-.02em}
+h1 small{display:block;margin-top:10px;font-size:clamp(14px,2vw,16px);font-weight:400;letter-spacing:0;color:var(--muted);line-height:1.6;max-width:62ch}
+
+/* 篩選列 */
+.filters{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 18px 14px}
+.strip-box{position:relative;height:64px;margin:0 9px 2px}
+.strip{position:absolute;inset:0;display:flex;gap:1px}
+.strip i{flex:1;transition:opacity .25s, background-color .35s}
+.strip i.off{opacity:.18}
+.strip-box input[type=range]{position:absolute;left:-9px;width:calc(100% + 18px);top:-4px;height:72px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.strip-box input[type=range]::-webkit-slider-runnable-track{background:none;height:72px}
+.strip-box input[type=range]::-moz-range-track{background:none;height:72px}
+.strip-box input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;cursor:ew-resize;width:18px;height:72px;background:transparent;border:0;border-left:3px solid var(--ink);border-right:3px solid var(--ink);border-radius:0}
+.strip-box input[type=range]::-moz-range-thumb{pointer-events:auto;cursor:ew-resize;width:12px;height:72px;background:transparent;border:0;border-left:3px solid var(--ink);border-right:3px solid var(--ink);border-radius:0}
+.strip-box input[type=range]:focus-visible{outline:none}
+.strip-box input[type=range]:focus-visible::-webkit-slider-thumb{background:rgba(31,78,121,.25)}
+.strip-box input[type=range]:focus-visible::-moz-range-thumb{background:rgba(31,78,121,.25)}
+.strip-axis{position:relative;height:18px;margin:0 9px;font-size:12px;color:var(--muted)}
+.strip-axis span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.range-label{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:6px 0 12px;font-size:14px}
+.range-label b{font-variant-numeric:tabular-nums}
+.range-label .hint{color:var(--muted);font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;padding-top:12px;border-top:1px solid var(--line)}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field>.lab{font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip,.seg button,.btn,.dd-btn{border:1px solid var(--line);background:#fff;border-radius:4px;padding:6px 12px;min-height:36px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.seg{display:inline-flex}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:4px 0 0 4px;margin-left:0}
+.seg button:last-child{border-radius:0 4px 4px 0}
+.seg button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent);position:relative;z-index:1}
+.btn:hover,.chip:hover,.seg button:hover,.dd-btn:hover{border-color:var(--ink)}
+.btn.reset{margin-left:auto}
+.dd{position:relative}
+.dd-btn{min-width:168px;text-align:left;display:flex;justify-content:space-between;gap:10px}
+.dd-panel{position:absolute;z-index:30;top:calc(100% + 4px);left:0;width:min(320px,86vw);max-height:340px;overflow:auto;background:#fff;border:1px solid var(--ink);border-radius:4px;padding:8px;box-shadow:0 8px 24px rgba(23,35,43,.18)}
+.dd-panel[hidden]{display:none}
+.dd-panel input[type=search]{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:4px;margin-bottom:6px}
+.dd-group{font-size:12px;color:var(--muted);margin:8px 0 2px}
+.dd-item{display:flex;gap:8px;align-items:center;padding:4px 6px;border-radius:3px;cursor:pointer}
+.dd-item:hover{background:var(--accent-soft)}
+.dd-item input{width:16px;height:16px}
+.dd-actions{display:flex;justify-content:space-between;margin-top:8px;font-size:13px}
+.dd-actions button{border:0;background:none;color:var(--accent);cursor:pointer;text-decoration:underline;padding:4px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);margin:18px 0;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.kpi{padding:16px 18px;border-left:1px solid var(--line);min-width:0}
+.kpi:first-child{border-left:0}
+.kpi .lab{font-size:13px;color:var(--muted)}
+.kpi .val{font-size:clamp(26px,3.4vw,38px);font-weight:900;letter-spacing:-.01em;line-height:1.15;margin:4px 0 2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi .val small{font-size:15px;font-weight:500;margin-left:4px;color:var(--muted)}
+.kpi .sub{font-size:13px;color:var(--muted)}
+.up{color:#B3261E}.down{color:#1F7A3A}
+
+/* 圖表 */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 16px 10px;min-width:0}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.card h2{margin:0;font-size:18px;line-height:1.35}
+.card .seg button{padding:4px 10px;min-height:32px;font-size:13px;white-space:nowrap}
+.insight{margin:6px 0 4px;font-size:14px;color:var(--ink);min-height:44px}
+.chart{height:440px;width:100%}
+.empty{display:none;margin:8px 0;padding:14px;border:1px dashed var(--muted);border-radius:4px;color:var(--muted);font-size:14px}
+.note-line{font-size:12px;color:var(--muted);margin:0 0 6px}
+.nd-sw{display:inline-block;width:14px;height:14px;margin-right:6px;vertical-align:-2px;border:1px solid #C9D3D0;background:repeating-linear-gradient(45deg,#E6EBE9 0 3px,#C3CCC9 3px 4px)}
+.banner{display:none;margin:0 0 14px;padding:10px 14px;background:#FFF1D6;border:1px solid #E0B25A;border-radius:4px;font-size:14px}
+
+/* 頁尾 */
+footer{margin-top:28px;padding:26px 0 48px;border-top:2px solid var(--ink);font-size:14px}
+footer h3{margin:0 0 8px;font-size:16px}
+.foot-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+table.lv{border-collapse:collapse;width:100%;font-size:14px}
+table.lv th,table.lv td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+table.lv .sw{display:inline-block;width:18px;height:18px;border-radius:3px;vertical-align:middle;border:1px solid rgba(0,0,0,.2)}
+footer ul{margin:0;padding-left:1.2em}
+footer li{margin:3px 0}
+footer p{margin:6px 0}
+footer a{color:var(--accent)}
+.formula{background:#fff;border:1px solid var(--line);border-radius:4px;padding:8px 10px;margin:6px 0;font-size:13px}
+
+@media (min-width:861px){
+  .filters{position:sticky;top:0;z-index:25;box-shadow:0 6px 14px -8px rgba(23,35,43,.35)}
+}
+@media (max-width:860px){
+  .grid,.foot-grid{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi:nth-child(3){border-left:0}
+  .kpi:nth-child(n+3){border-top:1px solid var(--line)}
+  .chart{height:380px}
+  .btn.reset{margin-left:0}
+}
+@media (max-width:480px){
+  .wrap{padding:0 16px}
+  .kpis{grid-template-columns:1fr}
+  .kpi{border-left:0;border-top:1px solid var(--line)}
+  .kpi:first-child{border-top:0}
+  .card-h{flex-direction:column}
+  .dd-btn{min-width:0;width:100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>台灣空氣品質 AQI 2021–2026
+      <small id="lede"></small></h1>
+  </header>
+
+  <div class="banner" id="banner">圖表函式庫 ECharts 載入失敗（可能沒有網路），圖表無法顯示；篩選列、指標卡片與頁尾仍可使用。</div>
+
+  <section class="filters" aria-label="全域篩選">
+    <div class="strip-box" id="stripBox">
+      <div class="strip" id="strip" aria-hidden="true"></div>
+      <input type="range" id="r0" min="0" max="60" value="0" aria-label="期間起點（月）">
+      <input type="range" id="r1" min="0" max="60" value="60" aria-label="期間終點（月）">
+    </div>
+    <div class="strip-axis" id="stripAxis" aria-hidden="true"></div>
+    <div class="range-label">
+      <span>期間：<b id="rangeText"></b></span>
+      <span class="hint" id="stripHint"></span>
+    </div>
+    <div class="row">
+      <div class="field"><span class="lab">區域（可多選）</span><div class="chips" id="regionChips"></div></div>
+      <div class="field">
+        <span class="lab" id="cLab">縣市（可搜尋、多選）</span>
+        <div class="dd" id="dd">
+          <button type="button" class="dd-btn" id="ddBtn" aria-haspopup="true" aria-expanded="false" aria-labelledby="cLab ddText"><span id="ddText">全部縣市</span><span aria-hidden="true">▾</span></button>
+          <div class="dd-panel" id="ddPanel" hidden>
+            <input type="search" id="ddSearch" placeholder="輸入縣市名稱" aria-label="搜尋縣市">
+            <div id="ddList"></div>
+            <div class="dd-actions"><button type="button" id="ddClear">清除縣市</button><button type="button" id="ddClose">完成</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="field"><span class="lab">指標</span>
+        <div class="seg" id="metricSeg">
+          <button type="button" data-v="over" aria-pressed="true">AQI&gt;100 比率</button>
+          <button type="button" data-v="good" aria-pressed="false">良好比率</button>
+        </div>
+      </div>
+      <button type="button" class="btn reset" id="reset">重設全部篩選</button>
+    </div>
+  </section>
+
+  <section class="kpis" aria-label="重點指標">
+    <div class="kpi"><div class="lab" id="k1l"></div><div class="val" id="k1v"></div><div class="sub" id="k1s"></div></div>
+    <div class="kpi"><div class="lab">近 12 個月與前 12 個月相比</div><div class="val" id="k2v"></div><div class="sub" id="k2s"></div></div>
+    <div class="kpi"><div class="lab">期間空氣最好的縣市</div><div class="val" id="k3v"></div><div class="sub" id="k3s"></div></div>
+    <div class="kpi"><div class="lab">期間空氣最差的縣市</div><div class="val" id="k4v"></div><div class="sub" id="k4s"></div></div>
+  </section>
+
+  <main class="grid">
+    <article class="card" id="card1">
+      <div class="card-h"><h2>月趨勢</h2>
+        <div class="seg" data-chart="1"><button type="button" data-v="line" aria-pressed="true">折線</button><button type="button" data-v="stack" aria-pressed="false">等級組成</button></div></div>
+      <p class="insight" id="ins1"></p>
+      <div class="empty" id="emp1">所選範圍沒有資料，請調整篩選條件。</div>
+      <div class="chart" id="ch1" role="img" aria-label="月趨勢圖"></div>
+    </article>
+    <article class="card" id="card2">
+      <div class="card-h"><h2>季節性</h2>
+        <div class="seg" data-chart="2"><button type="button" data-v="heat" aria-pressed="true">年×月熱力圖</button><button type="button" data-v="season" aria-pressed="false">區域月平均</button></div></div>
+      <p class="insight" id="ins2"></p>
+      <p class="note-line" id="note2"><span class="nd-sw"></span>灰色斜線 = 無資料（來源資料 2021-06 之前、2026-06 之後沒有）。</p>
+      <div class="empty" id="emp2">所選範圍沒有資料，請調整篩選條件。</div>
+      <div class="chart" id="ch2" role="img" aria-label="季節性圖"></div>
+    </article>
+    <article class="card" id="card3">
+      <div class="card-h"><h2>縣市排名</h2>
+        <div class="seg" data-chart="3"><button type="button" data-v="bar" aria-pressed="true">長條</button><button type="button" data-v="dot" aria-pressed="false">點圖</button></div></div>
+      <p class="insight" id="ins3"></p>
+      <p class="note-line">只受期間與指標影響，不受區域、縣市篩選影響；點擊縣市即加入或取消縣市篩選。</p>
+      <div class="empty" id="emp3">所選範圍沒有資料，請調整篩選條件。</div>
+      <div class="chart" id="ch3" role="img" aria-label="縣市排名圖"></div>
+    </article>
+    <article class="card" id="card4">
+      <div class="card-h"><h2 id="h4">年度變化</h2>
+        <div class="seg" data-chart="4"><button type="button" data-v="slope" aria-pressed="true">斜率圖</button><button type="button" data-v="group" aria-pressed="false">分組長條</button></div></div>
+      <p class="insight" id="ins4"></p>
+      <p class="note-line" id="note4"></p>
+      <div class="empty" id="emp4">所選範圍沒有資料，請調整篩選條件。</div>
+      <div class="chart" id="ch4" role="img" aria-label="年度變化圖"></div>
+    </article>
+  </main>
+
+  <footer>
+    <div class="foot-grid">
+      <div>
+        <h3>AQI 等級對照</h3>
+        <table class="lv" id="lvTable"></table>
+        <p style="font-size:13px;color:var(--muted)">依環境部空氣品質指標分級。</p>
+        <h3 style="margin-top:20px">計算公式</h3>
+        <div id="formulas"></div>
+      </div>
+      <div>
+        <h3>資料來源</h3>
+        <p id="srcText"></p>
+        <h3 style="margin-top:20px">限制說明</h3>
+        <ul id="noteList"></ul>
+        <p style="margin-top:18px">原始碼與資料：<a href="https://github.com/411332062-creator/taiwan-aqi" target="_blank" rel="noopener">github.com/411332062-creator/taiwan-aqi</a></p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+'use strict';
+const D = window.AQI_DATA;
+const HAS_CHARTS = typeof echarts !== 'undefined';
+if(!HAS_CHARTS) document.getElementById('banner').style.display='block';
+
+/* ---------- 資料整理 ---------- */
+const dates = D.dims.dates, counties = D.dims.counties, regionsAll = D.dims.regions;
+const cReg = D.dims.countyRegion, levels = D.dims.levels;
+const nD = dates.length, nC = counties.length;
+const LKEYS = levels.map(l=>l.key);            // g m s a v h
+const LC = ['#35B24A','#F2D12E','#F28B1E','#E0342B','#8F3F97','#7E0023'];
+const OVER_IDX = [2,3,4,5];
+const mk = () => Array.from({length:nC},()=>new Array(nD).fill(0));
+const T = mk(), L = LKEYS.map(mk);
+const C = D.cols;
+for(let i=0;i<C.t.length;i++){
+  T[C.c[i]][C.d[i]] = C.t[i];
+  LKEYS.forEach((k,j)=>{ L[j][C.c[i]][C.d[i]] = C[k][i]; });
+}
+const monthOf = dates.map(s=>+s.slice(5,7)), yearOf = dates.map(s=>+s.slice(0,4));
+const years = [...new Set(yearOf)];
+const completeYears = years.filter(y=>dates.filter((_,i)=>yearOf[i]===y).length===12);
+const cIdx = Object.fromEntries(counties.map((c,i)=>[c,i]));
+const ALL = counties.map((_,i)=>i).filter(i=>i>0);   // 22 縣市（不含全國）
+
+function agg(cs, d0, d1, mfilter){
+  const r = {t:0, lv:[0,0,0,0,0,0]};
+  for(const c of cs) for(let d=d0; d<=d1; d++){
+    if(mfilter && !mfilter(d)) continue;
+    r.t += T[c][d];
+    for(let j=0;j<6;j++) r.lv[j] += L[j][c][d];
+  }
+  r.over = OVER_IDX.reduce((s,j)=>s+r.lv[j],0);
+  r.good = r.lv[0];
+  return r;
+}
+
+/* ---------- 狀態 ---------- */
+const S = {d0:0, d1:nD-1, regions:new Set(), counties:new Set(), metric:'over', type:{1:'line',2:'heat',3:'bar',4:'slope'}};
+const METRIC = {over:{name:'AQI>100 比率', color:'#D8332A', better:'lower'}, good:{name:'良好比率', color:'#2E9E4F', better:'higher'}};
+const mName = () => METRIC[S.metric].name;
+const val = a => a.t ? (S.metric==='over'? a.over : a.good)/a.t*100 : null;
+const f1 = v => v==null ? '—' : v.toFixed(1)+'%';
+const pp = v => (v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1);
+const isFiltered = () => S.regions.size>0 || S.counties.size>0;
+function sel(){
+  if(!isFiltered()) return ALL;
+  return ALL.filter(i=>S.regions.has(cReg[i]) || S.counties.has(counties[i]));
+}
+const selText = () => {
+  if(!isFiltered()) return '全部縣市';
+  const s = sel();
+  return s.length<=3 ? s.map(i=>counties[i]).join('、') : s.length+' 個縣市';
+};
+
+/* ---------- 色階（條紋與熱力圖共用） ---------- */
+const RAMP = ['#DCEBD6','#F2D12E','#F28B1E','#D8332A','#7E0023'];
+const rampFor = () => S.metric==='over' ? RAMP : RAMP.slice().reverse();
+function hex2rgb(h){return [1,3,5].map(i=>parseInt(h.slice(i,i+2),16));}
+function rampColor(t){
+  const R = RAMP, x = Math.min(1,Math.max(0,t))*(R.length-1), i = Math.min(R.length-2, Math.floor(x)), f = x-i;
+  const a = hex2rgb(R[i]), b = hex2rgb(R[i+1]);
+  return 'rgb('+a.map((v,k)=>Math.round(v+(b[k]-v)*f)).join(',')+')';
+}
+
+/* ---------- DOM 輔助 ---------- */
+const $ = id => document.getElementById(id);
+const stripEl = $('strip');
+for(let i=0;i<nD;i++){ stripEl.appendChild(document.createElement('i')); }
+(function(){
+  const ax = $('stripAxis');
+  dates.forEach((s,i)=>{ if(monthOf[i]===1 || i===0){
+    const sp = document.createElement('span'); sp.textContent = i===0 ? s : yearOf[i]+'';
+    sp.style.left = ((i+.5)/nD*100)+'%'; ax.appendChild(sp);
+  }});
+})();
+
+/* ---------- 篩選列 ---------- */
+const regionChips = $('regionChips');
+regionsAll.forEach(r=>{
+  const b = document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=r; b.setAttribute('aria-pressed','false');
+  b.onclick = () => { S.regions.has(r)? S.regions.delete(r) : S.regions.add(r); update(); };
+  regionChips.appendChild(b);
+});
+const ddBtn=$('ddBtn'), ddPanel=$('ddPanel'), ddSearch=$('ddSearch'), ddList=$('ddList');
+function buildDD(){
+  const q = ddSearch.value.trim();
+  ddList.innerHTML='';
+  regionsAll.forEach(r=>{
+    const items = ALL.filter(i=>cReg[i]===r && (!q || counties[i].includes(q) || r.includes(q)));
+    if(!items.length) return;
+    const g = document.createElement('div'); g.className='dd-group'; g.textContent=r; ddList.appendChild(g);
+    items.forEach(i=>{
+      const lab = document.createElement('label'); lab.className='dd-item';
+      const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=S.counties.has(counties[i]);
+      cb.onchange = () => { cb.checked? S.counties.add(counties[i]) : S.counties.delete(counties[i]); update(true); };
+      lab.append(cb, document.createTextNode(counties[i])); ddList.appendChild(lab);
+    });
+  });
+  if(!ddList.children.length){ ddList.textContent='找不到符合的縣市'; ddList.style.padding='6px'; } else ddList.style.padding='';
+}
+function openDD(o){ ddPanel.hidden=!o; ddBtn.setAttribute('aria-expanded',o); if(o){ buildDD(); ddSearch.focus(); } }
+ddBtn.onclick = () => openDD(ddPanel.hidden);
+$('ddClose').onclick = () => { openDD(false); ddBtn.focus(); };
+$('ddClear').onclick = () => { S.counties.clear(); update(); };
+ddSearch.oninput = buildDD;
+document.addEventListener('click', e => { if(!ddPanel.hidden && !$('dd').contains(e.target)) openDD(false); });
+document.addEventListener('keydown', e => { if(e.key==='Escape' && !ddPanel.hidden){ openDD(false); ddBtn.focus(); } });
+
+document.querySelectorAll('#metricSeg button').forEach(b=>b.onclick=()=>{ S.metric=b.dataset.v; update(); });
+document.querySelectorAll('.seg[data-chart]').forEach(seg=>{
+  seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{ S.type[seg.dataset.chart]=b.dataset.v; update(); });
+});
+$('reset').onclick = () => {
+  S.d0=0; S.d1=nD-1; S.regions.clear(); S.counties.clear(); S.metric='over';
+  S.type={1:'line',2:'heat',3:'bar',4:'slope'}; update();
+};
+const r0=$('r0'), r1=$('r1');
+r0.max=r1.max=nD-1; r1.value=nD-1;
+r0.oninput = () => { if(+r0.value>+r1.value) r0.value=r1.value; S.d0=+r0.value; update(); };
+r1.oninput = () => { if(+r1.value<+r0.value) r1.value=r0.value; S.d1=+r1.value; update(); };
+
+/* ---------- 頁尾 ---------- */
+(function(){
+  const m = D.meta;
+  $('lede').textContent = '環境部空氣品質監測站每日 AQI 的月統計，'+m.period.from+' 至 '+m.period.to+'，22 個縣市。以「站日數」加權，看空氣在哪裡、何時變差。';
+  $('lvTable').innerHTML = '<tr><th>等級</th><th>AQI 範圍</th><th>代表色</th></tr>' +
+    levels.map((l,i)=>'<tr><td>'+l.name+'</td><td>'+l.aqiRange+'</td><td><span class="sw" style="background:'+LC[i]+'"></span></td></tr>').join('');
+  $('formulas').innerHTML = Object.values(m.formula).map(t=>'<div class="formula">'+t+'</div>').join('');
+  $('srcText').innerHTML = m.source.agency+'：<a href="'+m.source.datasetUrl+'" target="_blank" rel="noopener">'+m.source.name+'</a><br>期間：'+m.period.from+' ～ '+m.period.to+'（'+dates.length+' 個月）<br>下載日期：'+m.source.downloadedOn+'<br>授權：'+m.source.license;
+  $('noteList').innerHTML = m.notes.map(t=>'<li>'+t+'</li>').join('');
+})();
+
+/* ---------- 圖表 ---------- */
+const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const charts = {};
+if(HAS_CHARTS){
+  [1,2,3,4].forEach(n=>{ charts[n]=echarts.init($('ch'+n)); });
+  addEventListener('resize', ()=>Object.values(charts).forEach(c=>c.resize()));
+}
+const isMobile = () => innerWidth<=640;
+const baseAnim = { animation:!reduce, animationDuration:500, animationDurationUpdate:600, animationEasingUpdate:'cubicOut' };
+const REPLACE_ALL = ['series','xAxis','yAxis','visualMap','legend','grid'];
+const REPLACE_SOFT = ['series','visualMap','legend'];
+const lastType = {};
+function put(n, opt){
+  if(!HAS_CHARTS) return;
+  const type = S.type[n];
+  opt = Object.assign({}, baseAnim, opt);
+  if(!opt.visualMap) opt.visualMap = [];
+  charts[n].setOption(opt, {replaceMerge: lastType[n] && lastType[n]!==type ? REPLACE_ALL : REPLACE_SOFT});
+  lastType[n]=type;
+}
+const axisName = (t, loc, gap) => ({name:t, nameLocation:loc||'middle', nameGap:gap||30, nameTextStyle:{color:'#5A6A72'}});
+const TXT = {color:'#17232B'};
+
+function show(n, hasData){
+  $('emp'+n).style.display = hasData ? 'none' : 'block';
+  $('ch'+n).style.display = hasData ? '' : 'none';
+  if(hasData && HAS_CHARTS) charts[n].resize();
+}
+
+/* 圖 1 */
+function chart1(){
+  const cs = sel(), d0=S.d0, d1=S.d1;
+  const idx = []; for(let d=d0; d<=d1; d++) idx.push(d);
+  const per = idx.map(d=>agg(cs,d,d));
+  const tot = agg(cs,d0,d1);
+  const ok = tot.t>0; show(1, ok);
+  if(!ok){ $('ins1').textContent='所選範圍沒有資料。'; return; }
+  const xs = idx.map(d=>dates[d]);
+  if(S.type[1]==='line'){
+    const v = per.map(val);
+    let hi=0, lo=0; v.forEach((x,i)=>{ if(x>v[hi]) hi=i; if(x<v[lo]) lo=i; });
+    $('ins1').textContent = '所選縣市（'+selText()+'）'+xs[0]+' 至 '+xs[xs.length-1]+' 的'+mName()+'為 '+f1(val(tot))+'；最高在 '+xs[hi]+'（'+f1(v[hi])+'），最低在 '+xs[lo]+'（'+f1(v[lo])+'）。';
+    const series = [{id:'sel', name:'所選縣市', type:'line', data:v, showSymbol:v.length<=36, symbolSize:6, lineStyle:{width:2.5,color:METRIC[S.metric].color}, itemStyle:{color:METRIC[S.metric].color},
+      areaStyle:{color:METRIC[S.metric].color, opacity:.12}, universalTransition:true}];
+    if(isFiltered()){
+      series.push({id:'nat', name:'全國', type:'line', data:idx.map(d=>val(agg([0],d,d))), showSymbol:false, lineStyle:{width:1.5,type:'dashed',color:'#5A6A72'}, itemStyle:{color:'#5A6A72'}, universalTransition:true});
+    }
+    put(1,{ color:[METRIC[S.metric].color,'#5A6A72'],
+      grid:{left:56,right:20,top:36,bottom:isMobile()?72:56},
+      legend:{top:0, data:series.map(s=>s.name), textStyle:TXT},
+      tooltip:{trigger:'axis', valueFormatter:x=>f1(x)},
+      xAxis:{type:'category', data:xs, boundaryGap:false, axisLabel:{hideOverlap:true}, ...axisName('月份','middle',34)},
+      yAxis:{type:'value', min:0, axisLabel:{formatter:'{value}%'}, ...axisName(mName()+'（%）','middle',40)},
+      series});
+  } else {
+    const sh = per.map(a=>a.lv.map(x=>a.t? x/a.t*100 : 0));
+    const tl = tot.lv.map(x=>x/tot.t*100);
+    $('ins1').textContent = '所選縣市（'+selText()+'）整段期間：'+levels.map((l,j)=>l.name+' '+tl[j].toFixed(1)+'%').join('、')+'。';
+    put(1,{ color:LC,
+      grid:{left:56,right:20,top:60,bottom:isMobile()?72:56},
+      legend:{top:0, data:levels.map(l=>l.name), textStyle:TXT, type:'scroll'},
+      tooltip:{trigger:'axis', valueFormatter:x=>x.toFixed(1)+'%'},
+      xAxis:{type:'category', data:xs, boundaryGap:false, axisLabel:{hideOverlap:true}, ...axisName('月份','middle',34)},
+      yAxis:{type:'value', min:0, max:100, axisLabel:{formatter:'{value}%'}, ...axisName('各等級占比（%）','middle',40)},
+      series: levels.map((l,j)=>({id:'lv'+j, name:l.name, type:'line', stack:'all', areaStyle:{opacity:.92}, showSymbol:false, lineStyle:{width:0.5,color:'#fff'}, data:sh.map(r=>r[j]), universalTransition:true}))});
+  }
+}
+
+/* 圖 2 */
+const COLD = m => m>=10 || m<=4;
+function chart2(){
+  const cs = sel(), d0=S.d0, d1=S.d1;
+  const tot = agg(cs,d0,d1); const ok = tot.t>0; show(2, ok);
+  if(!ok){ $('ins2').textContent='所選範圍沒有資料。'; return; }
+  const cold = agg(cs,d0,d1,d=>COLD(monthOf[d])), warm = agg(cs,d0,d1,d=>!COLD(monthOf[d]));
+  const byM = []; for(let m=1;m<=12;m++){ const a=agg(cs,d0,d1,d=>monthOf[d]===m); byM.push(a.t? val(a):null); }
+  const lowBetter = METRIC[S.metric].better==='lower';
+  let bad=-1, good=-1;
+  byM.forEach((x,i)=>{ if(x==null) return;
+    if(bad<0 || (lowBetter? x>byM[bad] : x<byM[bad])) bad=i;
+    if(good<0 || (lowBetter? x<byM[good] : x>byM[good])) good=i; });
+  let txt = '所選縣市（'+selText()+'）';
+  if(cold.t && warm.t) txt += '10～4 月的'+mName()+'為 '+f1(val(cold))+'，5～9 月為 '+f1(val(warm))+'（差 '+pp(val(cold)-val(warm))+' 個百分點）；';
+  txt += '空氣最差的月份是 '+(bad+1)+' 月（'+f1(byM[bad])+'），最好是 '+(good+1)+' 月（'+f1(byM[good])+'）。';
+  $('ins2').textContent = txt;
+  const mlabels = [...Array(12)].map((_,i)=>(i+1)+'月');
+  if(S.type[2]==='heat'){
+    const ys = years.filter(y=>yearOf.some((yy,d)=>yy===y && d>=d0 && d<=d1));
+    const data = []; let mn=Infinity, mx=-Infinity;
+    for(let d=d0; d<=d1; d++){
+      const v=val(agg(cs,d,d)); if(v==null) continue;
+      data.push({value:[monthOf[d]-1, ys.indexOf(yearOf[d]), +v.toFixed(4)], name:dates[d], _v:v});
+      mn=Math.min(mn,v); mx=Math.max(mx,v);
+    }
+    if(mx-mn<0.01){ mx=mn+0.01; }
+    const darkAt = v => { const t=(v-mn)/(mx-mn); return S.metric==='over' ? t>0.6 : t<0.4; };
+    data.forEach(x=>{ x.label = {color: darkAt(x._v) ? '#FFFFFF' : '#17232B'}; });
+    const nodata = [];
+    ys.forEach((y,yi)=>{ for(let m=1;m<=12;m++){ if(!dates.includes(y+'-'+String(m).padStart(2,'0'))) nodata.push({value:[m-1,yi,0], name:y+'-'+String(m).padStart(2,'0'), nd:true}); } });
+    $('note2').style.display='';
+    put(2,{ grid:{left:62,right:20,top:16,bottom:isMobile()?108:96},
+      tooltip:{formatter:p=>p.data.nd ? p.data.name+'<br>無資料' : p.data.name+'<br>'+mName()+'：'+f1(p.data.value[2])},
+      xAxis:{type:'category', data:mlabels, splitArea:{show:true}, ...axisName('月份','middle',30)},
+      yAxis:{type:'category', data:ys.map(String), inverse:true, ...axisName('年份','middle',44)},
+      visualMap:{seriesIndex:0, min:mn, max:mx, calculable:false, orient:'horizontal', left:'center', bottom:4, itemWidth:14, itemHeight:isMobile()?160:240, text:[f1(mx),f1(mn)], inRange:{color:rampFor()}, textStyle:TXT},
+      series:[{id:'heat', name:mName(), type:'heatmap', data, label:{show:!isMobile(), formatter:p=>p.value[2].toFixed(1), fontSize:10, color:'#17232B', rich:{}}, itemStyle:{borderColor:'#FAFBFA', borderWidth:2}, universalTransition:true},
+        {id:'nodata', name:'無資料', type:'heatmap', data:nodata, silent:false, label:{show:false}, itemStyle:{color:'#E6EBE9', borderColor:'#FAFBFA', borderWidth:2, decal:{symbol:'rect', symbolSize:1, rotation:Math.PI/4, dashArrayX:[1,0], dashArrayY:[2,4], color:'rgba(90,106,114,.45)'}}}]});
+  } else {
+    $('note2').style.display='none';
+    const RC = ['#2B6CB0','#B7791F','#C53030','#2C7A7B','#6B46C1'];
+    const series = [];
+    regionsAll.forEach((r,ri)=>{
+      const rc = cs.filter(i=>cReg[i]===r); if(!rc.length) return;
+      const data = []; for(let m=1;m<=12;m++){ const a=agg(rc,d0,d1,d=>monthOf[d]===m); data.push(a.t? val(a):null); }
+      series.push({id:'reg'+ri, name:r, type:'line', data, connectNulls:false, symbolSize:6, lineStyle:{width:2.5,color:RC[ri]}, itemStyle:{color:RC[ri]}, universalTransition:true});
+    });
+    put(2,{ grid:{left:56,right:20,top:40,bottom:56},
+      legend:{top:0, data:series.map(s=>s.name), textStyle:TXT},
+      tooltip:{trigger:'axis', valueFormatter:x=>f1(x)},
+      xAxis:{type:'category', data:mlabels, boundaryGap:false, splitArea:{show:false}, ...axisName('月份','middle',32)},
+      yAxis:{type:'value', min:0, axisLabel:{formatter:'{value}%'}, ...axisName(mName()+'（%）','middle',40)},
+      series});
+  }
+}
+
+/* 圖 3 */
+function chart3(){
+  const d0=S.d0, d1=S.d1;
+  const rows = ALL.map(c=>({c, name:counties[c], v:val(agg([c],d0,d1))})).filter(r=>r.v!=null).sort((a,b)=>b.v-a.v);
+  const nat = val(agg([0],d0,d1));
+  show(3, rows.length>0);
+  if(!rows.length){ $('ins3').textContent='所選範圍沒有資料。'; return; }
+  const top = rows[0], bot = rows[rows.length-1];
+  const bestIsLow = METRIC[S.metric].better==='lower';
+  const worst = bestIsLow? top : bot, best = bestIsLow? bot : top;
+  $('ins3').textContent = mName()+'：全國 '+f1(nat)+'；最差 '+worst.name+'（'+f1(worst.v)+'），最好 '+best.name+'（'+f1(best.v)+'），相差 '+Math.abs(top.v-bot.v).toFixed(1)+' 個百分點。';
+  const hl = new Set(isFiltered()? sel() : []);
+  const col = r => !isFiltered() || hl.has(r.c) ? METRIC[S.metric].color : '#B9C4C1';
+  const cats = rows.map(r=>r.name);
+  const mark = {silent:true, symbol:'none', lineStyle:{color:'#17232B',type:'dashed'}, label:{formatter:'全國 '+f1(nat), position:'end', rotate:0, color:'#17232B', fontSize:11, backgroundColor:'#FAFBFA', padding:[1,3]}, data:[{xAxis:nat}]};
+  const common = {grid:{left:70,right:isMobile()?44:56,top:12,bottom:44},
+    tooltip:{trigger:'item', formatter:p=>p.name+'：'+f1(Array.isArray(p.value)? p.value[0] : p.value)},
+    yAxis:{type:'category', data:cats, inverse:true, axisLabel:{interval:0, fontSize:12}, ...axisName('縣市','middle',58)},
+    xAxis:{type:'value', min:0, axisLabel:{formatter:'{value}%'}, ...axisName(mName()+'（%）','middle',28)}};
+  if(S.type[3]==='bar'){
+    put(3,{...common, series:[{id:'rank', type:'bar', barWidth:'62%', data:rows.map(r=>({name:r.name, value:+r.v.toFixed(4), itemStyle:{color:col(r)}})),
+      label:{show:true, position:'right', formatter:p=>p.value.toFixed(1)+'%', fontSize:11}, markLine:mark, universalTransition:true}]});
+  } else {
+    put(3,{...common, series:[{id:'rank', type:'scatter', symbolSize:13, data:rows.map(r=>({name:r.name, value:[+r.v.toFixed(4), r.name], itemStyle:{color:col(r)}})),
+      label:{show:true, position:'right', formatter:p=>p.value[0].toFixed(1)+'%', fontSize:11}, markLine:mark, universalTransition:true}]});
+  }
+}
+
+/* 圖 4 */
+function yearAgg(c, y){ const ds=[]; yearOf.forEach((yy,d)=>{ if(yy===y) ds.push(d); }); return agg([c], ds[0], ds[ds.length-1]); }
+function chart4(){
+  const ya = completeYears[0], yb = completeYears[completeYears.length-1];
+  $('h4').textContent = '年度變化 '+ya+'→'+yb;
+  $('note4').textContent = '只用完整年份（'+completeYears.join('、')+'），不受期間滑桿影響；顯示所選縣市。2021、2026 月份不全，未納入。';
+  const cs = sel();
+  const rows = cs.map(c=>({c, name:counties[c], vs:completeYears.map(y=>val(yearAgg(c,y)))})).filter(r=>r.vs.every(v=>v!=null));
+  show(4, rows.length>0);
+  if(!rows.length){ $('ins4').textContent='所選範圍沒有資料。'; return; }
+  rows.forEach(r=>{ r.delta = r.vs[r.vs.length-1]-r.vs[0]; });
+  const lowGood = METRIC[S.metric].better==='lower';
+  const improved = r => lowGood ? r.delta<-0.05 : r.delta>0.05;
+  const worsened = r => lowGood ? r.delta>0.05 : r.delta<-0.05;
+  const nImp = rows.filter(improved).length, nWor = rows.filter(worsened).length;
+  const sorted = rows.slice().sort((a,b)=>a.delta-b.delta);
+  const bestR = lowGood? sorted[0] : sorted[sorted.length-1], worstR = lowGood? sorted[sorted.length-1] : sorted[0];
+  let t4 = ya+' → '+yb+' 年，'+rows.length+' 個縣市中 '+nImp+' 個'+mName()+'改善、'+nWor+' 個變差';
+  if(nImp) t4 += '；進步最多 '+bestR.name+'（'+pp(bestR.delta)+' 個百分點）';
+  if(nWor) t4 += '；退步最多 '+worstR.name+'（'+pp(worstR.delta)+' 個百分點）';
+  $('ins4').textContent = t4+'。';
+  const cOf = r => improved(r)? '#2E9E4F' : worsened(r)? '#D8332A' : '#7A8A90';
+  if(S.type[4]==='slope'){
+    const n = rows[0].vs.length;
+    const allV = rows.flatMap(r=>[r.vs[0], r.vs[n-1]]);
+    const ymin = Math.max(0, Math.floor(Math.min(...allV)-1)), ymax = Math.ceil(Math.max(...allV)+1);
+    const plotH = charts[4].getHeight() - 20 - 44, GAP = 14;
+    const px = v => (ymax - v) / (ymax - ymin) * plotH;          // 由上往下的像素位置
+    // 兩側各自把標籤往上下推開，至少間隔 GAP 像素；offset 只改標籤位置，不改數值
+    function dodge(side){
+      const items = rows.map(r=>({r, y:px(r.vs[side])})).sort((a,b)=>a.y-b.y);
+      for(let i=1;i<items.length;i++) if(items[i].y-items[i-1].y<GAP) items[i].y = items[i-1].y+GAP;
+      if(items.length && items[items.length-1].y>plotH){
+        items[items.length-1].y = plotH;
+        for(let i=items.length-2;i>=0;i--) if(items[i+1].y-items[i].y<GAP) items[i].y = items[i+1].y-GAP;
+      }
+      const m = new Map(); items.forEach(it=>m.set(it.r, it.y - px(it.r.vs[side]))); return m;
+    }
+    const offL = dodge(0), offR = dodge(n-1);
+    const series = rows.map(r=>({id:'s'+r.c, name:r.name, type:'line', data:[
+        {value:+r.vs[0].toFixed(4), label:{show:true, position:'left', offset:[0,offL.get(r)], formatter:r.name+' '+r.vs[0].toFixed(1)+'%', color:cOf(r), fontSize:11}},
+        {value:+r.vs[n-1].toFixed(4), label:{show:true, position:'right', offset:[0,offR.get(r)], formatter:r.name+' '+r.vs[n-1].toFixed(1)+'%', color:cOf(r), fontSize:11}}],
+      symbolSize:7, lineStyle:{width:2,color:cOf(r)}, itemStyle:{color:cOf(r)}, emphasis:{focus:'series', lineStyle:{width:4}},
+      universalTransition:true}));
+    put(4,{ grid:{left:isMobile()?112:136,right:isMobile()?112:136,top:20,bottom:44},
+      legend:{show:false},
+      tooltip:{trigger:'item', formatter:p=>{ const r=rows.find(x=>x.name===p.seriesName); return r.name+'<br>'+ya+'：'+f1(r.vs[0])+'<br>'+yb+'：'+f1(r.vs[n-1])+'<br>變化：'+pp(r.delta)+' 個百分點'; }},
+      xAxis:{type:'category', data:[ya+'年',yb+'年'], boundaryGap:['8%','8%'], ...axisName('年份','middle',28)},
+      yAxis:{type:'value', min:ymin, max:ymax, axisLabel:{show:false}, ...axisName(mName()+'（%）','middle',46)},
+      series});
+  } else {
+    const order = rows.slice().sort((a,b)=>b.vs[b.vs.length-1]-a.vs[a.vs.length-1]);
+    const YC = ['#BFD3E3','#8FB0CC','#4F7FA8','#1F4E79'];
+    put(4,{ color:YC,
+      grid:{left:56,right:16,top:40,bottom:isMobile()?100:84},
+      legend:{top:0, data:completeYears.map(y=>y+'年'), textStyle:TXT},
+      tooltip:{trigger:'axis', axisPointer:{type:'shadow'}, valueFormatter:x=>f1(x)},
+      xAxis:{type:'category', data:order.map(r=>r.name), boundaryGap:true, axisLabel:{interval:0, rotate:45, fontSize:11}, ...axisName('縣市','middle',isMobile()?64:56)},
+      yAxis:{type:'value', min:0, axisLabel:{formatter:'{value}%'}, ...axisName(mName()+'（%）','middle',40)},
+      series: completeYears.map((y,k)=>({id:'y'+y, name:y+'年', type:'bar', data:order.map(r=>+r.vs[k].toFixed(4)), universalTransition:true}))});
+  }
+}
+
+/* ---------- KPI ---------- */
+function kpis(){
+  const d1=S.d1, d0=S.d0, lab = mName();
+  $('k1l').textContent = dates[d1]+' 全國'+lab;
+  const nat = agg([0],d1,d1);
+  $('k1v').textContent = f1(val(nat));
+  let sub = '全國站日加權';
+  if(d1-12>=0){ const ly=val(agg([0],d1-12,d1-12)); sub = '去年同月 '+f1(ly)+'（'+pp(val(nat)-ly)+' 個百分點）'; }
+  $('k1s').textContent = sub;
+  const cs = sel();
+  const k2v=$('k2v'), k2s=$('k2s');
+  if(d1-23>=0){
+    const a=val(agg(cs,d1-11,d1)), b=val(agg(cs,d1-23,d1-12)), dl=a-b;
+    const worse = METRIC[S.metric].better==='lower'? dl>0 : dl<0;
+    k2v.innerHTML = '<span class="'+(Math.abs(dl)<0.05?'':worse?'up':'down')+'">'+(dl>0.05?'▲ ':dl<-0.05?'▼ ':'')+Math.abs(dl).toFixed(1)+'<small>個百分點</small></span>';
+    k2s.textContent = dates[d1-11]+'～'+dates[d1]+' '+f1(a)+'；前 12 個月 '+f1(b)+'（'+selText()+'）';
+  } else { k2v.textContent='—'; k2s.textContent='期間終點之前不足 24 個月，無法比較'; }
+  const rows = ALL.map(c=>({n:counties[c], v:val(agg([c],d0,d1))})).filter(r=>r.v!=null).sort((x,y)=>x.v-y.v);
+  if(rows.length){
+    const low = METRIC[S.metric].better==='lower';
+    const best = low? rows[0] : rows[rows.length-1], worst = low? rows[rows.length-1] : rows[0];
+    $('k3v').textContent=best.n; $('k3s').textContent=lab+' '+f1(best.v)+'（'+dates[d0]+'～'+dates[d1]+'）';
+    $('k4v').textContent=worst.n; $('k4s').textContent=lab+' '+f1(worst.v)+'（'+dates[d0]+'～'+dates[d1]+'）';
+  } else { ['k3v','k3s','k4v','k4s'].forEach(i=>$(i).textContent='—'); }
+}
+
+/* ---------- 條紋與篩選列狀態 ---------- */
+function filterUI(){
+  const cs = sel(), m = mName();
+  const vals = dates.map((_,d)=>val(agg(cs,d,d)));
+  const lo=Math.min(...vals), hi=Math.max(...vals), span = hi-lo || 1;
+  [...stripEl.children].forEach((el,d)=>{
+    const t = (vals[d]-lo)/span;
+    el.style.backgroundColor = rampColor(S.metric==='over'? t : 1-t);
+    el.classList.toggle('off', d<S.d0 || d>S.d1);
+    el.title = dates[d]+'　'+m+' '+f1(vals[d]);
+  });
+  $('stripHint').textContent = '色條 = '+selText()+'每月'+m+'（'+(S.metric==='over'?'越紅越差':'越綠越好')+'，'+f1(lo)+'～'+f1(hi)+'）；拖曳兩端選期間';
+  $('rangeText').textContent = dates[S.d0]+' ～ '+dates[S.d1]+'（'+(S.d1-S.d0+1)+' 個月）';
+  r0.value=S.d0; r1.value=S.d1;
+  document.querySelectorAll('#regionChips .chip').forEach(b=>b.setAttribute('aria-pressed', S.regions.has(b.textContent)));
+  document.querySelectorAll('#metricSeg button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===S.metric));
+  document.querySelectorAll('.seg[data-chart]').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===S.type[seg.dataset.chart])));
+  $('ddText').textContent = S.counties.size? '已選 '+S.counties.size+' 個縣市' : '全部縣市';
+}
+
+function update(keepOpen){
+  filterUI(); kpis();
+  chart1(); chart2(); chart3(); chart4();
+  if(!ddPanel.hidden && !keepOpen) buildDD();
+}
+
+if(HAS_CHARTS){
+  charts[3].on('click', p => {
+    const name = p.name; if(!cIdx[name]) return;
+    S.counties.has(name)? S.counties.delete(name) : S.counties.add(name);
+    update();
+  });
+}
+update();
+})();
+</script>
+</body>
+</html>
